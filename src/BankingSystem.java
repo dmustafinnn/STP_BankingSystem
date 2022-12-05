@@ -1,10 +1,8 @@
 import java.io.FileInputStream;
-import java.lang.ProcessBuilder.Redirect.Type;
 import java.sql.CallableStatement;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.ResultSet;
-import java.sql.SQLException;
 import java.sql.Statement;
 import java.sql.Types;
 import java.util.Properties;
@@ -73,9 +71,7 @@ public class BankingSystem extends Exception {
 		if(age.matches("[0-9]+") && pin.matches("[0-9]+")) {
 
 			try {
-				System.out.println(":: CALLING THE STORED PROCEDURE - P2.CUST_CRT");
 				con = DriverManager.getConnection(url, username, password); 
-
 				cStmt = con.prepareCall("{call P2.CUST_CRT(?,?,?,?,?,?,?)}");
 				cStmt.setString(1, name);
 				cStmt.setString(2, gender);
@@ -87,9 +83,9 @@ public class BankingSystem extends Exception {
 				cStmt.execute();
 
 				System.out.print("YOUR ID: " + cStmt.getInt("id"));
+				System.out.println(":: " + cStmt.getString("err_msg") + "\n"); 
 				cStmt.close();
-				con.close();
-				System.out.println("\n:: CREATE NEW CUSTOMER - SUCCESS\n");                                                                       
+				con.close();                                                                      
 			}catch (Exception e) {
 				System.out.println("Exception in newCustomer()");
 				e.printStackTrace();
@@ -120,9 +116,9 @@ public class BankingSystem extends Exception {
 			cStmt.execute();
 
 			System.out.println("YOUR ACCOUNT NUMBER: " + cStmt.getInt("p_num"));
+			System.out.println(":: " + cStmt.getString("err_msg") + "\n"); 
 			cStmt.close();                        
-			con.close();
-			System.out.println(":: OPEN ACCOUNT - SUCCESS\n");                                                                       
+			con.close();                                                                      
 		  }catch (Exception e) {
 			System.out.println("Exception in openAccount()");
 			e.printStackTrace();

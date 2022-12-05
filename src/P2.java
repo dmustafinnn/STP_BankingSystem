@@ -271,18 +271,17 @@ public class P2 {
             cStmt.execute();
 
             valid = cStmt.getInt("valid");
-            name = cStmt.getString("p_name");
 		} catch (Exception e) {
 			e.printStackTrace();
 			return false;
 		}
 
         if(valid == 1) {
-            System.out.println("\nWelcome Back, " + name + "!");
+            System.out.println("\nWelcome Back!");
             return true;
         }
         else
-        return false;
+            return false;
 	}//CheckIfInDB
 
     public static int checkId() {

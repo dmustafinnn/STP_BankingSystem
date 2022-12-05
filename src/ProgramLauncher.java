@@ -13,7 +13,6 @@ public class ProgramLauncher {
 			BankingSystem.init(argv[0]);
 			BankingSystem.testConnection();
 			System.out.println();
-			//BatchInputProcessor.run(argv[0]);
 			P2.init(argv[0]);
 			P2.MainMenu();
 		}
