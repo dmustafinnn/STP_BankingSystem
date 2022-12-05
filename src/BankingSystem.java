@@ -1,4 +1,5 @@
 import java.io.FileInputStream;
+import java.lang.ProcessBuilder.Redirect.Type;
 import java.sql.CallableStatement;
 import java.sql.Connection;
 import java.sql.DriverManager;
@@ -136,31 +137,15 @@ public class BankingSystem extends Exception {
 	{
 		System.out.println("\n:: CLOSE ACCOUNT - RUNNING");
 		try {                                                                  
-			con = DriverManager.getConnection(url, username, password);                 
-			stmt = con.createStatement(); 
-			
-			//Check if an account exists
-			rs = stmt.executeQuery("SELECT 1 FROM p1.account WHERE number = " + Integer.valueOf(accNum) + " LIMIT 1");
-			if(!rs.next())
-				throw new AccountNotExistException("ACCOUNT NOT FOUND\n");
-
-			//Check if an account is active
-			rs = stmt.executeQuery("SELECT status FROM p1.account WHERE number = " + Integer.valueOf(accNum));
-			while(rs.next())
-				if(rs.getString(1).charAt(0) == 'I')
-					throw new InactiveAccountException("THE ACCOUNT IS ALREADY CLOSED\n");
-
-			//Execute the closeAccount operation
-			stmt.executeUpdate("UPDATE p1.account SET status = 'I', balance = 0 WHERE number = " + Integer.valueOf(accNum));
-
-			rs.close();                                         
-			stmt.close();                                                                           
-			con.close(); 
-			System.out.println(":: CLOSE ACCOUNT - SUCCESS\n");                                                                           
-		}catch(AccountNotExistException ex) {
-			System.out.println(ex.getMessage());
-		}catch(InactiveAccountException ex) {
-			System.out.println(ex.getMessage());
+			con = DriverManager.getConnection(url, username, password);
+			cStmt = con.prepareCall("{call P2.ACCT_CLS(?,?,?)}");
+			cStmt.setInt(1, Integer.valueOf(accNum));
+			cStmt.registerOutParameter("sql_code", Types.INTEGER);
+			cStmt.registerOutParameter("err_msg", Types.CHAR);
+			cStmt.execute();
+			System.out.println(":: " + cStmt.getString("err_msg") + "\n"); 
+			cStmt.close();                                                                           
+			con.close();                                                                         
 		}catch (Exception e) {
 			System.out.println("Exception in closeAccount()");
 			e.printStackTrace();
@@ -176,38 +161,21 @@ public class BankingSystem extends Exception {
 	{
 		System.out.println("\n:: DEPOSIT - RUNNING");
 		if(amount.matches("[0-9]+")) {
-			
-				try {                                                             
-					con = DriverManager.getConnection(url, username, password);                 
-					stmt = con.createStatement();
-
-					//Check if an account exists 
-					rs = stmt.executeQuery("SELECT 1 FROM p1.account WHERE number = " + Integer.valueOf(accNum) + " LIMIT 1");
-					if(!rs.next())
-						throw new AccountNotExistException("ACCOUNT NOT FOUND\n");
-
-					//Check if an account is active
-					rs = stmt.executeQuery("SELECT status FROM p1.account WHERE number = " + Integer.valueOf(accNum));
-					while(rs.next())
-						if(rs.getString(1).charAt(0) == 'I')
-							throw new InactiveAccountException("ACCOUNT IS INACTIVE\n");
-					
-					//Execute a deposit operation
-					stmt.executeUpdate("UPDATE p1.account SET balance = balance + " 
-									+ Integer.valueOf(amount) + " WHERE number = " + Integer.valueOf(accNum)); 
-					rs.close();                                  
-					stmt.close();                                                                           
-					con.close(); 
-					System.out.println(":: DEPOSIT - SUCCESS\n");                                                                          
-				}catch(AccountNotExistException ex) {
-					System.out.println(ex.getMessage());
-				}catch(InactiveAccountException ex) {
-					System.out.println(ex.getMessage());
+			try {
+				con = DriverManager.getConnection(url, username, password);  
+				cStmt = con.prepareCall("{call P2.ACCT_DEP(?,?,?,?)}");
+				cStmt.setInt(1, Integer.valueOf(accNum));
+				cStmt.setInt(2, Integer.valueOf(amount));
+				cStmt.registerOutParameter("sql_code", Types.INTEGER);
+				cStmt.registerOutParameter("err_msg", Types.CHAR);
+				cStmt.execute();
+				System.out.print(":: " + cStmt.getString("err_msg") + "\n");
+				cStmt.close();                                                                           
+				con.close();                                                                   
 				}catch (Exception e) {
 					System.out.println("Exception in deposit()");
 					e.printStackTrace();
 				}
-			
 		}
 		else
 			System.out.println("AMOUNT IS NOT AN INTEGER!");
@@ -222,39 +190,18 @@ public class BankingSystem extends Exception {
 	{
 		System.out.println("\n:: WITHDRAW - RUNNING");
 		if(amount.matches("[0-9]+")) {
-			
-				try {                                                                  
-					con = DriverManager.getConnection(url, username, password);                 
-					stmt = con.createStatement(); 
-
-					//Check if an account exists 
-					rs = stmt.executeQuery("SELECT 1 FROM p1.account WHERE number = " + Integer.valueOf(accNum) + " LIMIT 1");
-					if(!rs.next())
-						throw new AccountNotExistException("ACCOUNT NOT FOUND\n");
-
-					//Check if an account is active and possesses a required amount
-					rs = stmt.executeQuery("SELECT balance, status FROM p1.account WHERE number = " + Integer.valueOf(accNum));
-					while(rs.next()) {
-						if(rs.getString(2).charAt(0) == 'I')
-							throw new InactiveAccountException("ACCOUNT IS INACTIVE\n"); 
-						else if(rs.getInt(1) < Integer.valueOf(amount))
-							throw new InsufficientBalanceException("INSUFFICIENT BALANCE\n");                               
-					}
-
-					//Execute a withdrawal operation
-					stmt.executeUpdate("UPDATE p1.account SET balance = balance - " + Integer.valueOf(amount) + 
-										" WHERE status <> 'I' AND number = " + Integer.valueOf(accNum));    
-																
-					rs.close();
-					stmt.close();                                                                           
-					con.close(); 
-					System.out.println(":: WITHDRAW - SUCCESS\n");                                                                          
-				}catch(AccountNotExistException ex) {
-					System.out.println(ex.getMessage());
-				}catch(InsufficientBalanceException ex) {
-					System.out.println(ex.getMessage());
-				}catch(InactiveAccountException ex) {
-					System.out.println (ex.getMessage());
+			try {                                                                  
+				con = DriverManager.getConnection(url, username, password);                 
+				cStmt = con.prepareCall("{call P2.ACCT_WTH(?,?,?,?)}"); 
+				cStmt.setInt(1, Integer.valueOf(accNum));
+				cStmt.setInt(2, Integer.valueOf(amount));
+				cStmt.registerOutParameter("sql_code", Types.INTEGER);
+				cStmt.registerOutParameter("err_msg", Types.CHAR);
+				cStmt.execute();
+				
+				System.out.println(":: " + cStmt.getString("err_msg")+ "\n");  	
+				cStmt.close();                                                                           
+				con.close();                                                                         
 				}catch (Exception e) {
 					System.out.println("Exception in withdraw()");
 					e.printStackTrace();
@@ -262,7 +209,6 @@ public class BankingSystem extends Exception {
 			}
 		else
 			System.out.println("AMOUNT IS NOT AN INTEGER!");
-
 	}//withdraw
 
 	/**
@@ -275,50 +221,17 @@ public class BankingSystem extends Exception {
 	{
 		System.out.println("\n:: TRANSFER - RUNNING");
 		try {                                                                  
-			con = DriverManager.getConnection(url, username, password);                 
-			stmt = con.createStatement();
-
-			//Check if the source account exists 
-			rs = stmt.executeQuery("SELECT 1 FROM p1.account WHERE number = " + Integer.valueOf(srcAccNum) + " LIMIT 1");
-			if(!rs.next())
-				throw new AccountNotExistException("SOURCE ACCOUNT NOT FOUND\n");
-
-			//Check if the source account is active and possesses a required amount 
-			rs = stmt.executeQuery("SELECT balance, status FROM p1.account WHERE number = " + Integer.valueOf(srcAccNum));
-			while(rs.next()) {
-				if(rs.getString(2).charAt(0) == 'I')
-					throw new InactiveAccountException("SOURCE ACCOUNT IS INACTIVE\n");        
-				else if(rs.getInt(1) < Integer.valueOf(amount))
-					throw new InsufficientBalanceException("INSUFFICIENT BALANCE\n");                                        
-			}
-
-			//Check if the destination account exists 
-			rs = stmt.executeQuery("SELECT 1 FROM p1.account WHERE number = " + Integer.valueOf(destAccNum) + " LIMIT 1");
-			if(!rs.next())
-				throw new AccountNotExistException("DESTINATION ACCOUNT NOT FOUND\n");
-
-			//Check if the destination account is active
-			rs = stmt.executeQuery("SELECT status FROM p1.account WHERE number = " + Integer.valueOf(destAccNum));
-			while(rs.next())
-				if(rs.getString(1).charAt(0) == 'I')
-					throw new InactiveAccountException("DESTINATION ACCOUNT IS INACTIVE\n");
-
-			//Execute a transfer operation
-			stmt.executeUpdate("UPDATE p1.account SET balance = balance - " + Integer.valueOf(amount) + 
-								" WHERE status <> 'I' AND number = " + Integer.valueOf(srcAccNum));
-			stmt.executeUpdate("UPDATE p1.account SET balance = balance + " 
-								+ Integer.valueOf(amount) + " WHERE number = " + Integer.valueOf(destAccNum));   
-			                        
-			rs.close();
-			stmt.close();                                                                           
-			con.close(); 
-			System.out.println(":: TRANSFER - SUCCESS\n");                                                                          
-		  }catch(AccountNotExistException ex) {
-			System.out.println(ex.getMessage());
-		  }catch(InsufficientBalanceException ex) {
-			System.out.println(ex.getMessage());
-		  }catch(InactiveAccountException ex) {
-			System.out.println (ex.getMessage());
+			con = DriverManager.getConnection(url, username, password);
+			cStmt = con.prepareCall("{call P2.ACCT_TRX(?,?,?,?,?)}");                 
+			cStmt.setInt(1, Integer.valueOf(srcAccNum));
+			cStmt.setInt(2, Integer.valueOf(destAccNum));
+			cStmt.setInt(3, Integer.valueOf(amount));
+			cStmt.registerOutParameter("sql_code", Types.INTEGER);
+			cStmt.registerOutParameter("err_msg", Types.CHAR);
+			cStmt.execute();
+			System.out.println(":: " + cStmt.getString("err_msg") + "\n");
+			cStmt.close();                                                                           
+			con.close();                                                                           
 		  }catch (Exception e) {
 			System.out.println("Exception in withdraw()");
 			e.printStackTrace();

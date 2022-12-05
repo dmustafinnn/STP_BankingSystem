@@ -107,7 +107,7 @@ public class P2 {
         boolean stop = false;
         
         while(input != 7) {
-            System.out.println("Customer Main Menu\n"
+            System.out.println("\nCustomer Main Menu\n"
             + "1. Open Account\n" 
             + "2. Close Account\n" 
             + "3. Deposit\n" 
@@ -327,8 +327,8 @@ public class P2 {
 			Connection con = DriverManager.getConnection(url, username, password);
 			Statement stmt = con.createStatement();
 
-			ResultSet rs = stmt.executeQuery("SELECT number FROM p1.account WHERE p1.account.id = " + loginId 
-                                            + " AND p1.account.number = " + accNum);
+			ResultSet rs = stmt.executeQuery("SELECT number FROM p2.account WHERE p2.account.id = " + loginId 
+                                            + " AND p2.account.number = " + accNum);
 			if(rs.next())
 				return true;
         
@@ -363,10 +363,10 @@ public class P2 {
         Scanner scanner = new Scanner(System.in);
         int amount = -1;
         boolean stop = false;
-        while(amount < 0) {
+        while(amount <= 0) {
             stop = false;
             do {
-                System.out.println("Enter an amount(0 or more):");
+                System.out.println("Enter an amount:");
                 try {
                     amount = scanner.nextInt();
                     stop = true;
